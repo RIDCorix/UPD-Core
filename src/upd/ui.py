@@ -10,6 +10,7 @@ from PySide6.QtGui import QBrush, QColor, QPainter, QPalette, QPen, QRadialGradi
 from PySide6.QtCore import Property, QEasingCurve, QParallelAnimationGroup, QPoint, QPointF, QPropertyAnimation, QRect, Signal, Slot
 from PySide6.QtWidgets import QHBoxLayout, QLineEdit, QWidget, QVBoxLayout, QPushButton, QLabel, QColorDialog
 
+from upd.conf import settings
 
 class Slidable:
     def __init__(self, *args, **kwargs):
@@ -117,7 +118,6 @@ class MainPanel(Slidable, QWidget):
 
 
     def paintEvent(self, e):
-        from main import settings
         super().paintEvent(e)
 
         painter = QPainter()
