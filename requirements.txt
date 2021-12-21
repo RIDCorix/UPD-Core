@@ -1,0 +1,3 @@
+PySide6
+googletrans==3.1.0a0
+Yapsy
