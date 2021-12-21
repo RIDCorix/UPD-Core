@@ -19,7 +19,7 @@ class Tool:
 
     def get_icon(self):
         try:
-            return QPixmap(f'assets/{self.get_name()}/icon.png')
+            return QPixmap(f'plugins/{self.get_id()}/assets/icon.png')
         except:
             raise ToolNotComplete(self.__get_any_names__(), 'get_icon')
 
