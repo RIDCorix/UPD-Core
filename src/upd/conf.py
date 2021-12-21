@@ -1,9 +1,8 @@
 from typing import List, Dict
 
 from PySide6.QtGui import QColor
-from src.upd.options import ColorOption, FontOption
 
-from upd.options import Optionable, Option
+from upd.options import Optionable, Option, FontOption, ColorOption
 
 class SettingsCategory(Optionable):
     def __getattr__(self, attr):

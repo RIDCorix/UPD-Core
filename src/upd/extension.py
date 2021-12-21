@@ -1,3 +1,4 @@
+from PySide6.QtGui import QPixmap
 from .exceptions import ToolNotComplete
 
 class Tool:
