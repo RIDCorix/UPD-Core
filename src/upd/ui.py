@@ -6,9 +6,9 @@ from contextlib import contextmanager
 from PySide6 import QtCore
 from PySide6 import QtWidgets
 
-from PySide6.QtGui import QBrush, QColor, QPainter, QPalette, QPen, QRadialGradient
+from PySide6.QtGui import QBrush, QColor, QPainter, QPalette, QPen, QPixmap, QRadialGradient
 from PySide6.QtCore import Property, QEasingCurve, QParallelAnimationGroup, QPoint, QPointF, QPropertyAnimation, QRect, Signal, Slot
-from PySide6.QtWidgets import QHBoxLayout, QLineEdit, QWidget, QVBoxLayout, QPushButton, QLabel, QColorDialog
+from PySide6.QtWidgets import QCompleter, QGridLayout, QHBoxLayout, QLineEdit, QWidget, QVBoxLayout, QPushButton, QLabel, QColorDialog
 
 class Slidable:
     def __init__(self, *args, **kwargs):
@@ -239,6 +239,7 @@ class ColorPicker(QWidget):
             palette.setColor(QPalette.Background, color)
             self.label.setPalette(palette)
 
+
 class Navigator(MainPanel):
     def get_expand_rate(self):
         return self._focus_rate
@@ -283,3 +284,46 @@ class Navigator(MainPanel):
 
     def option_selected(self, data):
         self.callback_on_select(data)
+
+
+class RGridView(Slidable, QWidget):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+        self.searchbox = RLineEdit()
+        layout.addWidget(self.searchbox)
+        self.grid = QWidget()
+        self.grid_layout = QGridLayout()
+        self.grid.setLayout(self.grid_layout)
+        self.layout().addWidget(self.grid)
+        self.index = 0
+        self.column_count = 5
+        self.onclick = None
+
+        self.completer = QCompleter(['some', 'words', 'in', 'my', 'dictionary'])
+        self.searchbox.setCompleter(self.completer)
+
+        self.add_item(QPixmap('assets/icon.png'), 'test')
+        self.add_item(QPixmap('assets/icon.png'), 'test')
+        self.add_item(QPixmap('assets/icon.png'), 'test')
+        self.add_item(QPixmap('assets/icon.png'), 'test')
+        self.add_item(QPixmap('assets/icon.png'), 'test')
+        self.add_item(QPixmap('assets/icon.png'), 'test')
+        self.add_item(QPixmap('assets/icon.png'), 'test')
+        self.add_item(QPixmap('assets/icon.png'), 'test')
+        self.add_item(QPixmap('assets/icon.png'), 'test')
+        self.add_item(QPixmap('assets/icon.png'), 'test')
+
+    def add_item(self, icon, name, onclick=None):
+        item = QPushButton(icon, name)
+        if onclick:
+            item.clicked.connect(onclick)
+
+        elif self.onclick:
+            item.clicked.connect(lambda: self.onclick(item))
+
+        self.grid_layout.addWidget(item, int(self.index/self.column_count), self.index % self.column_count)
+        self.index += 1
+
+ 
