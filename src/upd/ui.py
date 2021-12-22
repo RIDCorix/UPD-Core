@@ -10,6 +10,8 @@ from PySide6.QtGui import QBrush, QColor, QPainter, QPalette, QPen, QPixmap, QRa
 from PySide6.QtCore import Property, QEasingCurve, QParallelAnimationGroup, QPoint, QPointF, QPropertyAnimation, QRect, Signal, Slot
 from PySide6.QtWidgets import QCompleter, QGridLayout, QHBoxLayout, QLineEdit, QWidget, QVBoxLayout, QPushButton, QLabel, QColorDialog
 
+from .models import RBaseModel
+
 class Slidable:
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -301,6 +303,8 @@ class RGridView(Slidable, QWidget):
         self.column_count = 5
         self.onclick = None
 
+        self.model = RModel()
+
         self.completer = QCompleter(['some', 'words', 'in', 'my', 'dictionary'])
         self.searchbox.setCompleter(self.completer)
 
@@ -326,4 +330,5 @@ class RGridView(Slidable, QWidget):
         self.grid_layout.addWidget(item, int(self.index/self.column_count), self.index % self.column_count)
         self.index += 1
 
- 
+    def set_model(self, model: RBaseModel):
+        self.model = model
