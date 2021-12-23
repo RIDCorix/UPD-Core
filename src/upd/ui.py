@@ -115,6 +115,7 @@ class MainPanel(Slidable, QWidget):
 
         self.setProperty('type', 'panel')
         self.slide('drop_rate', 0.0, 1.0)
+        self.shrink = None
 
 
     def paintEvent(self, e):
@@ -130,8 +131,8 @@ class MainPanel(Slidable, QWidget):
         rect = self.rect()
         size = rect.bottomRight()
         short = min(rect.width(), rect.height())
-        shrink = QPoint(short, short) / 20
-        rect = QRect(shrink, size-shrink)
+        self.shrink = QPoint(short, short) / 20
+        rect = QRect(self.shrink, size-self.shrink)
         painter.drawRect(rect)
         painter.end()
 
@@ -303,7 +304,7 @@ class RGridView(Slidable, QWidget):
         self.column_count = 5
         self.onclick = None
 
-        self.model = RModel()
+        self.model = RBaseModel()
 
         self.completer = QCompleter(['some', 'words', 'in', 'my', 'dictionary'])
         self.searchbox.setCompleter(self.completer)

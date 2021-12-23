@@ -12,10 +12,14 @@ class Tool:
 
         self.init_tasks = []
         self.settings = {}
+        self.models = []
         self.main_panel_class = None
 
     def init_task(self, task_function):
         self.init_tasks.append(task_function)
+
+    def model(self, model_class):
+        self.models.append(model_class)
 
     def get_icon(self):
         try:
