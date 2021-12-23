@@ -7,8 +7,8 @@ from PySide6 import QtCore
 from PySide6 import QtWidgets
 
 from PySide6.QtGui import QBrush, QColor, QPainter, QPalette, QPen, QPixmap, QRadialGradient
-from PySide6.QtCore import Property, QEasingCurve, QParallelAnimationGroup, QPoint, QPointF, QPropertyAnimation, QRect, QSize, Signal, Slot
-from PySide6.QtWidgets import QCompleter, QGridLayout, QHBoxLayout, QLineEdit, QWidget, QVBoxLayout, QPushButton, QLabel, QColorDialog
+from PySide6.QtCore import Property, QEasingCurve, QParallelAnimationGroup, QPoint, QPointF, QPropertyAnimation, QRect, QSize, Qt, Signal, Slot
+from PySide6.QtWidgets import QCompleter, QGridLayout, QHBoxLayout, QLineEdit, QScrollArea, QWidget, QVBoxLayout, QPushButton, QLabel, QColorDialog
 
 from .models import RBaseModel
 
@@ -324,10 +324,23 @@ class RGridView(RWidget):
     ID_ADD = '__ID_ADD_R_ITEM__'
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        layout = QVBoxLayout()
-        self.setLayout(layout)
+        layout = QVBoxLayout(self)
         self.searchbox = RLineEdit()
+
         layout.addWidget(self.searchbox)
+
+        self.widget = QWidget()
+        self.scroll = QScrollArea()
+        self.scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.scroll.setWidget(self.widget)
+        self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.scroll.setStyleSheet("background-color:transparent;")
+        self.scroll.setProperty('hidden', 'True')
+        self.scroll.setFixedSize(600, 200)
+        self.scroll.setWidgetResizable(True)
+
+        layout.addWidget(self.scroll)
+
         self.index = 0
         self.column_count = 5
         self.onclick = None
@@ -340,7 +353,7 @@ class RGridView(RWidget):
         self.model = None
         self.name = None
         self.description = None
-        self.add_button = RItem('+', self)
+        self.add_button = RItem('+', self.widget)
         self.add_button.clicked.connect(self._create)
         self.items = {self.ID_ADD: self.add_button}
 
@@ -366,13 +379,14 @@ class RGridView(RWidget):
             name = item[self.name_attr]
             item_id = item['id']
             if item_id not in self.items:
-                r_item = RItem(name, self)
+                r_item = RItem(name, self.widget)
                 r_item.move(self.get_position(0))
                 self.items[item_id] = r_item
             try:
                 items_to_remove.remove(item_id)
             except:
                 pass
+            self.items[item_id].resize(self.width() / self.column_count * 2/3, 80)
             self.items[item_id].slide('pos', to_value=self.get_position(i))
 
         self.add_button.slide('pos', to_value=self.get_position(len(self.data)))
@@ -381,7 +395,7 @@ class RGridView(RWidget):
             self.items[item_id].slide('size', to_value=QSize(0, 0))
 
     def get_position(self, index):
-        x = int(index % self.column_count)
+        x = index % self.column_count
         y = int(index / self.column_count)
         x *= self.width() / self.column_count
         y *= 100
