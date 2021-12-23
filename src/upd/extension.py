@@ -20,6 +20,7 @@ class Tool:
 
     def model(self, model_class):
         self.models.append(model_class)
+        return model_class
 
     def get_icon(self):
         try:
