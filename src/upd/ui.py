@@ -5,8 +5,9 @@ import datetime
 from contextlib import contextmanager
 from PySide6 import QtCore
 from PySide6 import QtWidgets
+from PySide6 import QtGui
 
-from PySide6.QtGui import QBrush, QColor, QPainter, QPalette, QPen, QPixmap, QRadialGradient
+from PySide6.QtGui import QBrush, QColor, QFont, QPainter, QPalette, QPen, QPixmap, QRadialGradient
 from PySide6.QtCore import Property, QEasingCurve, QParallelAnimationGroup, QPoint, QPointF, QPropertyAnimation, QRect, QSize, Qt, Signal, Slot
 from PySide6.QtWidgets import QCompleter, QGridLayout, QHBoxLayout, QLineEdit, QScrollArea, QWidget, QVBoxLayout, QPushButton, QLabel, QColorDialog
 
@@ -15,41 +16,38 @@ from .models import RBaseModel
 class Slidable:
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._slide_running = False
+        self.anims = []
+        self._slide_running = {}
         self.from_value = None
         self.to_value = None
         self._slide_signal.connect(self._slide)
-        self._slide_att = b''
+        self._slide_att = ''
         self._slide_from = 0
         self._slide_to = 1
         self._slide_duration = 500
         self._slide_callback = None
-        self._easing = None
+        self._easing = QEasingCurve.OutCubic
 
-    def _slide_finished(self):
-        self._slide_running = False
+    def _slide_finished(self, attr):
         if self._slide_callback:
             self._slide_callback()
 
     def _slide(self):
-        if not self._slide_running:
-            self._slide_running = True
-            self.anim.stop()
-            self.anim.setPropertyName(self._slide_att)
-            self.anim.setStartValue(self._slide_from)
-            self.anim.setEndValue(self._slide_to)
-            self.anim.setDuration(self._slide_duration)
-            if self._easing:
-                self.anim.setEasingCurve(self._easing)
-            self.anim.finished.connect(self._slide_finished)
+        anim = QPropertyAnimation(self, self._slide_att.encode())
+        self.anims.append(anim)
+        anim.setStartValue(self._slide_from)
+        anim.setEndValue(self._slide_to)
+        anim.setDuration(self._slide_duration)
+        anim.setEasingCurve(self._easing)
+        anim.finished.connect(lambda :self._slide_finished(self._slide_att))
 
-            self.anim.start()
+        anim.start()
 
     _slide_signal = Signal()
 
     @Slot()
     def slide(self, att: str, from_value: Any=None, to_value: Any=None, duration: int=500, callback: Optional[str]=None, easing=QEasingCurve.OutCubic):
-        self._slide_att = att.encode()
+        self._slide_att = att
         self._slide_from = from_value
         if from_value is None:
             try:
@@ -67,13 +65,11 @@ class Slidable:
 class RWidget(Slidable, QWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.anim = QPropertyAnimation(self, b'')
 
 
 class RButton(Slidable, QPushButton):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.anim = QPropertyAnimation(self, b'')
 
 
 class RLineEdit(Slidable,QLineEdit):
@@ -88,7 +84,6 @@ class RLineEdit(Slidable,QLineEdit):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.anim = QPropertyAnimation(self, b'')
         self._focus_rate = 0
         self._slide()
 
@@ -130,8 +125,6 @@ class MainPanel(RWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._drop_rate = 0.0
-
-        self.anim = QPropertyAnimation(self, b'')
 
         effect = QtWidgets.QGraphicsDropShadowEffect(self)
         effect.setOffset(0, 0)
@@ -280,7 +273,6 @@ class Navigator(MainPanel):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.anim = QPropertyAnimation(self, b'')
         self._expand_rate = 0
         self._slide()
         self._parent = self.parent()
@@ -315,28 +307,81 @@ class Navigator(MainPanel):
 
 
 class RItem(RButton):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, name, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.anim = QPropertyAnimation(self, b'')
+        self._focus_rate = 0
+        self.label = QLabel(name, self)
+        self.label.setAlignment(Qt.AlignCenter | Qt.AlignCenter)
+
+    def get_focus_rate(self):
+        return self._focus_rate
+
+    def set_focus_rate(self,val):
+        self._focus_rate = val
+        self.update()
+
+    focus_rate = Property(float, get_focus_rate, set_focus_rate)
+
+    def paintEvent(self, e):
+        self.label.resize(self.size())
+
+        painter = QPainter()
+        painter.begin(self)
+        from .conf import settings
+        painter.setPen(QPen(settings.BORDER_COLOR, 5))
+
+        for x in range(2):
+            x *= self.width()
+            for y in range(2):
+                y *= self.height()
+                pos = (x, y)
+                p_pos = QPoint(*pos)
+                cent = self.rect().center()
+                cent.setX(x)
+                cent = p_pos + (cent-p_pos)*self.focus_rate/2
+                painter.drawLine(p_pos, cent)
+                cent = self.rect().center()
+                cent.setY(y)
+                cent = p_pos + (cent-p_pos)*self.focus_rate/2
+                painter.drawLine(p_pos, cent)
+
+        shrink = QPoint(20, 20) * self.focus_rate
+        color = settings.PANEL_COLOR
+        color.setAlpha(min(color.alpha() * (0.5+self.focus_rate/2), 255))
+        painter.setBrush(color)
+        painter.drawRect(QRect(self.rect().topLeft() + shrink, self.rect().bottomRight() - shrink))
+
+        painter.end()
+
+    def enterEvent(self, event):
+        super().enterEvent(event)
+        self.slide('focus_rate', to_value=1)
+
+    def leaveEvent(self, event):
+        super().leaveEvent(event)
+        self.slide('focus_rate', to_value=0)
 
 
 class RGridView(RWidget):
     ID_ADD = '__ID_ADD_R_ITEM__'
+    _refresh_signal = Signal()
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         layout = QVBoxLayout(self)
         self.searchbox = RLineEdit()
 
         layout.addWidget(self.searchbox)
+        self.searchbox.setFont(QFont('Share Tech Mono', 20))
 
         self.widget = QWidget()
         self.scroll = QScrollArea()
+        self.scroll.setProperty('hidden', 'True')
+        self.scroll.setStyleSheet('background-color:transparent;')
+        self.scroll.setAutoFillBackground(False)
+        # self.scroll.background
         self.scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.scroll.setWidget(self.widget)
         self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.scroll.setStyleSheet("background-color:transparent;")
-        self.scroll.setProperty('hidden', 'True')
-        self.scroll.setFixedSize(600, 200)
         self.scroll.setWidgetResizable(True)
 
         layout.addWidget(self.scroll)
@@ -355,9 +400,10 @@ class RGridView(RWidget):
         self.description = None
         self.add_button = RItem('+', self.widget)
         self.add_button.clicked.connect(self._create)
-        self.items = {self.ID_ADD: self.add_button}
+        self.items = {}
 
         self.data = []
+        self._refresh_signal.connect(self._refresh)
         self.refresh()
 
     def bind_model(self, model: RBaseModel, name=None, description=None):
@@ -369,30 +415,45 @@ class RGridView(RWidget):
     def get_data(self):
         return self.model.select(getattr(self.model, self.name_attr), self.model.id).dicts()
 
-    def refresh_data(self):
-        self.data = self.get_data()
-        self.refresh()
 
-    def refresh(self):
+    @Slot()
+    def _refresh(self):
+        size = (self.width() / self.column_count * 2/3, 80)
         items_to_remove = list(self.items.keys())
-        for i, item in enumerate(self.data):
+        data = [item for item in self.data if self.searchbox.text() in f'untitled drawer{item["id"]}']
+        for i, item in enumerate(data):
             name = item[self.name_attr]
             item_id = item['id']
+            name = f'untitled drawer{item_id}'
             if item_id not in self.items:
                 r_item = RItem(name, self.widget)
-                r_item.move(self.get_position(0))
                 self.items[item_id] = r_item
+                r_item.move(self.get_position(0))
+                r_item.show()
             try:
                 items_to_remove.remove(item_id)
             except:
                 pass
-            self.items[item_id].resize(self.width() / self.column_count * 2/3, 80)
+            self.items[item_id].slide('size', to_value=QSize(*size))
             self.items[item_id].slide('pos', to_value=self.get_position(i))
 
-        self.add_button.slide('pos', to_value=self.get_position(len(self.data)))
 
-        for i, item in enumerate(self.data):
-            self.items[item_id].slide('size', to_value=QSize(0, 0))
+        self.add_button.slide('pos', to_value=self.get_position(len(data))+QPoint(*size)/2 - self.add_button.rect().center())
+
+
+        for item in items_to_remove:
+            self.items[item].slide('size', to_value=QSize(0, 0))
+
+        self.widget.setMinimumHeight(self.get_position(len(self.items.keys())+self.column_count).y())
+
+    def refresh_data(self):
+        self.data = self.get_data()
+        self.completer.setModel(QtCore.QStringListModel([f'untitled drawer{item["id"]}' for item in self.data]))
+        self.completer.setFilterMode(Qt.MatchContains)
+        self.refresh()
+
+    def refresh(self):
+        self._refresh_signal.emit()
 
     def get_position(self, index):
         x = index % self.column_count
