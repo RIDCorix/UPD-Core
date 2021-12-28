@@ -26,7 +26,7 @@ class Option:
     def to_str(self):
         return str(self.value)
 
-class ColorOption(Option, ColorPicker):
+class ColorOption(Option):
     def to_str(self):
         return str(self.value.toTuple())
 
@@ -34,5 +34,10 @@ class ColorOption(Option, ColorPicker):
     def value(self):
         return QColor.fromRgb(self._value.rgba())
 
+
 class FontOption(Option):
+    pass
+
+
+class DurationOption(Option):
     pass

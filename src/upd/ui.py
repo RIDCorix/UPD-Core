@@ -388,7 +388,6 @@ class RGridView(RWidget):
 
         self.index = 0
         self.column_count = 5
-        self.onclick = None
 
         self.model = RBaseModel()
 
@@ -428,6 +427,7 @@ class RGridView(RWidget):
             if item_id not in self.items:
                 r_item = RItem(name, self.widget)
                 self.items[item_id] = r_item
+                r_item.clicked.connect(lambda:self._select(item))
                 r_item.move(self.get_position(0))
                 r_item.show()
             try:
@@ -462,12 +462,18 @@ class RGridView(RWidget):
         y *= 100
         return QPoint(x, y)
 
+    def on_create(self, function):
+        self.callback_on_create = function
+
     def _create(self):
         self.callback_on_create()
         self.refresh_data()
 
-    def on_create(self, function):
-        self.callback_on_create = function
+    def on_select(self, function):
+        self.callback_on_select = function
+
+    def _select(self, data):
+        self.callback_on_select(data)
 
     def paintEvent(self, event) -> None:
         self.refresh()
