@@ -62,6 +62,7 @@ class Slidable:
         self._slide_signal.emit()
 
 
+
 class RWidget(Slidable, QWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -125,11 +126,6 @@ class MainPanel(RWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._drop_rate = 0.0
-
-        effect = QtWidgets.QGraphicsDropShadowEffect(self)
-        effect.setOffset(0, 0)
-        effect.setBlurRadius(20)
-        self.setGraphicsEffect(effect)
 
         self.setProperty('type', 'panel')
         self.slide('drop_rate', 0.0, 1.0)
