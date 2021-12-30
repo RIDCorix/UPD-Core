@@ -28,10 +28,6 @@ class Slidable:
         self._slide_callback = None
         self._easing = QEasingCurve.OutCubic
 
-    def _slide_finished(self, attr):
-        if self._slide_callback:
-            self._slide_callback()
-
     def _slide(self):
         anim = QPropertyAnimation(self, self._slide_att.encode())
         self.anims.append(anim)
@@ -39,7 +35,9 @@ class Slidable:
         anim.setEndValue(self._slide_to)
         anim.setDuration(self._slide_duration)
         anim.setEasingCurve(self._easing)
-        anim.finished.connect(lambda :self._slide_finished(self._slide_att))
+        if self._slide_callback:
+            callback = self._slide_callback
+            anim.finished.connect(lambda :callback())
 
         anim.start()
 
@@ -58,9 +56,8 @@ class Slidable:
         self._slide_to = to_value
         self._slide_duration = duration
         self._slide_callback = callback
-        self._easing=easing
+        self._easing = easing
         self._slide_signal.emit()
-
 
 
 class RWidget(Slidable, QWidget):
@@ -130,7 +127,6 @@ class MainPanel(RWidget):
         self.setProperty('type', 'panel')
         self.slide('drop_rate', 0.0, 1.0)
         self.shrink = QPoint(0, 0)
-
 
     def paintEvent(self, e):
         super().paintEvent(e)
