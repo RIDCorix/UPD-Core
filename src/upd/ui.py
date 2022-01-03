@@ -13,6 +13,29 @@ from PySide6.QtWidgets import QCompleter, QGridLayout, QHBoxLayout, QLineEdit, Q
 
 from .models import RBaseModel
 
+
+class Renderable:
+    def paintEvent(self, e):
+        from upd.conf import settings
+        renderer = settings.RENDERER
+
+
+        try:
+            getattr(renderer, f'pre_render_{self.widget_type}')(self, e)
+        except:
+            renderer.pre_render(self, e)
+
+        try:
+            getattr(renderer, f'render_{self.widget_type}')(self, e)
+        except:
+            renderer.render(self, e)
+
+        try:
+            getattr(renderer, f'post_render_{self.widget_type}')(self, e)
+        except:
+            renderer.post_render(self, e)
+
+
 class Slidable:
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -60,17 +83,17 @@ class Slidable:
         self._slide_signal.emit()
 
 
-class RWidget(Slidable, QWidget):
+class RWidget(Renderable, Slidable, QWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-
-class RButton(Slidable, QPushButton):
+class RButton(Renderable, Slidable, QPushButton):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.widget_type = 'button'
 
 
-class RLineEdit(Slidable,QLineEdit):
+class RLineEdit(Renderable, Slidable,QLineEdit):
     def get_focus_rate(self):
         return self._focus_rate
 
@@ -82,6 +105,7 @@ class RLineEdit(Slidable,QLineEdit):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.widget_type = 'line_edit'
         self._focus_rate = 0
         self._slide()
 
@@ -92,22 +116,6 @@ class RLineEdit(Slidable,QLineEdit):
     def focusOutEvent(self, event):
         super().focusOutEvent(event)
         self.slide('focus_rate', self.focus_rate, 0)
-
-    def paintEvent(self, e):
-        painter = QPainter()
-        painter.begin(self)
-        start = QPointF(0, self.size().height()/2)
-        gradient = QRadialGradient(start, 50)
-
-        gradient.setColorAt(0, QColor(0, 0, 0))
-        color = QColor(255, 255, 255)
-        color.a = 0
-        gradient.setColorAt(self.focus_rate, color)
-
-        painter.setBrush(QBrush(gradient))
-        painter.drawRect(self.rect())
-        painter.end()
-        super().paintEvent(e)
 
 
 class MainPanel(RWidget):
@@ -123,28 +131,10 @@ class MainPanel(RWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._drop_rate = 0.0
-
+        self.widget_type = 'main_panel'
         self.setProperty('type', 'panel')
         self.slide('drop_rate', 0.0, 1.0)
         self.shrink = QPoint(0, 0)
-
-    def paintEvent(self, e):
-        super().paintEvent(e)
-
-        painter = QPainter()
-        painter.begin(self)
-        painter.setPen(QPen(QColor(255, 255, 255), 2))
-
-        painter.drawRect(self.rect())
-        painter.setPen(QPen(QColor(255, 255, 255), 0))
-        painter.setBrush(QBrush(QColor(0, 0, 0, 100)))
-        rect = self.rect()
-        size = rect.bottomRight()
-        short = min(rect.width(), rect.height())
-        self.shrink = QPoint(short, short) / 20
-        rect = QRect(self.shrink, size-self.shrink)
-        painter.drawRect(rect)
-        painter.end()
 
 
 class ConsoleBlock:
@@ -236,7 +226,7 @@ class ColorPicker(QWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         layout = QVBoxLayout(self)
-        self.button = QPushButton("Select color")
+        self.button = QPushButton()
         self.button.clicked.connect(self.on_clicked)
         layout.addWidget(self.button)
 
@@ -245,7 +235,6 @@ class ColorPicker(QWidget):
         if color.isValid():
             self.button.setStyleSheet(f'QPushButton{{color: rgba{color.toTuple()};}}')
 
-        self.button.setText(self.name)
 
 class Navigator(MainPanel):
     def get_expand_rate(self):
@@ -296,6 +285,7 @@ class RItem(RButton):
     def __init__(self, name, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._focus_rate = 0
+        self.widget_type = 'item'
         self.label = QLabel(name, self)
         self.label.setAlignment(Qt.AlignCenter | Qt.AlignCenter)
 
@@ -307,37 +297,6 @@ class RItem(RButton):
         self.update()
 
     focus_rate = Property(float, get_focus_rate, set_focus_rate)
-
-    def paintEvent(self, e):
-        self.label.resize(self.size())
-
-        painter = QPainter()
-        painter.begin(self)
-        from .conf import settings
-        painter.setPen(QPen(settings.BORDER_COLOR, 5))
-
-        for x in range(2):
-            x *= self.width()
-            for y in range(2):
-                y *= self.height()
-                pos = (x, y)
-                p_pos = QPoint(*pos)
-                cent = self.rect().center()
-                cent.setX(x)
-                cent = p_pos + (cent-p_pos)*self.focus_rate/2
-                painter.drawLine(p_pos, cent)
-                cent = self.rect().center()
-                cent.setY(y)
-                cent = p_pos + (cent-p_pos)*self.focus_rate/2
-                painter.drawLine(p_pos, cent)
-
-        shrink = QPoint(20, 20) * self.focus_rate
-        color = settings.PANEL_COLOR
-        color.setAlpha(min(color.alpha() * (0.5+self.focus_rate/2), 255))
-        painter.setBrush(color)
-        painter.drawRect(QRect(self.rect().topLeft() + shrink, self.rect().bottomRight() - shrink))
-
-        painter.end()
 
     def enterEvent(self, event):
         super().enterEvent(event)
@@ -355,7 +314,7 @@ class RGridView(RWidget):
         super().__init__(*args, **kwargs)
         layout = QVBoxLayout(self)
         self.searchbox = RLineEdit()
-
+        self.widget_type = 'grid_view'
         layout.addWidget(self.searchbox)
         self.searchbox.setFont(QFont('Share Tech Mono', 20))
 

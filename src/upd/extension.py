@@ -16,7 +16,8 @@ class Tool:
 
     def renderer(self, renderer_class):
         from .renderers import renderers
-        renderers.append(renderer_class)
+        renderers[renderer_class().name] = renderer_class()
+
 
     def init_task(self, task_function):
         self.init_tasks.append(task_function)
