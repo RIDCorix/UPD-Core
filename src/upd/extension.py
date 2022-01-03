@@ -11,9 +11,12 @@ class Tool:
         #     importlib.import_module(f'{mod}.{modname}')
 
         self.init_tasks = []
-        self.settings = {}
         self.models = []
         self.main_panel_class = None
+
+    def renderer(self, renderer_class):
+        from .renderers import renderers
+        renderers.append(renderer_class)
 
     def init_task(self, task_function):
         self.init_tasks.append(task_function)
@@ -44,3 +47,6 @@ class Tool:
     def get_main_panel(self):
         return self.main_panel_class()
 
+    def settings(self, **kwargs):
+        from .conf import settings
+        settings.add_category(self.get_id(), **kwargs)

@@ -1,6 +1,7 @@
 from typing import Any
 
 from PySide6.QtGui import QColor
+from PySide6.QtWidgets import QComboBox
 
 from .ui import ColorPicker
 
@@ -26,7 +27,10 @@ class Option:
     def to_str(self):
         return str(self.value)
 
-class ColorOption(Option):
+    def real_time_init(self, *args, **kwargs):
+        pass
+
+class ColorOption(Option, ColorPicker):
     def to_str(self):
         return str(self.value.toTuple())
 
@@ -35,9 +39,15 @@ class ColorOption(Option):
         return QColor.fromRgb(self._value.rgba())
 
 
-class FontOption(Option):
+class FontOption(Option, ColorPicker):
     pass
 
 
-class DurationOption(Option):
+class DurationOption(Option, ColorPicker):
     pass
+
+class ChoiceOption(Option, QComboBox):
+    def choice(self, args=None, **kwargs):
+        if args:
+            for arg in args:
+                self.addItem('bruh')

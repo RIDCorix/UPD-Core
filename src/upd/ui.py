@@ -236,22 +236,16 @@ class ColorPicker(QWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         layout = QVBoxLayout(self)
-        button = QPushButton("Select color")
-        button.clicked.connect(self.on_clicked)
-        self.label = QLabel()
-        self.label.setAutoFillBackground(True)
-        self.label.setFixedSize(100, 100)
-
-        layout.addWidget(button)
-        layout.addWidget(self.label)
+        self.button = QPushButton("Select color")
+        self.button.clicked.connect(self.on_clicked)
+        layout.addWidget(self.button)
 
     def on_clicked(self):
         color = QColorDialog.getColor()
         if color.isValid():
-            palette = self.label.palette()
-            palette.setColor(QPalette.Background, color)
-            self.label.setPalette(palette)
+            self.button.setStyleSheet(f'QPushButton{{color: rgba{color.toTuple()};}}')
 
+        self.button.setText(self.name)
 
 class Navigator(MainPanel):
     def get_expand_rate(self):
