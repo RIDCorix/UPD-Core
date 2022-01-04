@@ -9,7 +9,7 @@ from PySide6 import QtGui
 
 from PySide6.QtGui import QBrush, QColor, QFont, QPainter, QPalette, QPen, QPixmap, QRadialGradient
 from PySide6.QtCore import Property, QEasingCurve, QParallelAnimationGroup, QPoint, QPointF, QPropertyAnimation, QRect, QSize, Qt, Signal, Slot
-from PySide6.QtWidgets import QCompleter, QGridLayout, QHBoxLayout, QLineEdit, QPlainTextEdit, QScrollArea, QTabWidget, QWidget, QVBoxLayout, QPushButton, QLabel, QColorDialog
+from PySide6.QtWidgets import QCompleter, QGridLayout, QHBoxLayout, QLineEdit, QPlainTextEdit, QScrollArea, QTabWidget, QTextEdit, QWidget, QVBoxLayout, QPushButton, QLabel, QColorDialog
 
 from .models import RBaseModel
 
@@ -97,7 +97,7 @@ class RButton(Renderable, Slidable, QPushButton):
         self.widget_type = 'button'
 
 
-class RLineEdit(Renderable, Slidable,QLineEdit):
+class RLineEdit(Renderable, Slidable, QLineEdit):
     def get_focus_rate(self):
         return self._focus_rate
 
@@ -111,7 +111,6 @@ class RLineEdit(Renderable, Slidable,QLineEdit):
         super().__init__(*args, **kwargs)
         self.widget_type = 'line_edit'
         self._focus_rate = 0
-        self._slide()
 
     def focusInEvent(self, event):
         super().focusInEvent(event)
@@ -268,8 +267,6 @@ class Navigator(MainPanel):
         head_layout.addWidget(QPushButton('+'))
 
     def paintEvent(self, e):
-        painter = QPainter()
-        painter.begin(self)
         super().paintEvent(e)
 
     def on_select(self, callback):
@@ -429,7 +426,30 @@ class RGridView(RWidget):
         return super().paintEvent(event)
 
 
-class RTextEdit(QPlainTextEdit):
+class RTextEdit(RWidget):
+    def get_focus_rate(self):
+        return self._focus_rate
+
+    def set_focus_rate(self,val):
+        self._focus_rate = val
+        self.update()
+
+    focus_rate = Property(float, get_focus_rate, set_focus_rate)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.widget_type='text_edit'
+        self.line_edit = QTextEdit(self)
+        self.widget_type = 'text_edit'
+        self._focus_rate = 0
+
+    def focusInEvent(self, event):
+        super().focusInEvent(event)
+        self.slide('focus_rate', 0, 1)
+
+    def focusOutEvent(self, event):
+        super().focusOutEvent(event)
+        self.slide('focus_rate', self.focus_rate, 0)
+
+    def paintEvent(self, event):
+        self.line_edit.resize(self.size())
+        super().paintEvent(event)
