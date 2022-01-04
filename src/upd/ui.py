@@ -427,6 +427,15 @@ class RGridView(RWidget):
 
 
 class RTextEdit(RWidget):
+    class _TextEdit(QPlainTextEdit):
+        def focusInEvent(self, event):
+            super().focusInEvent(event)
+            self.parent().slide('focus_rate', 0, 1)
+
+        def focusOutEvent(self, event):
+            super().focusOutEvent(event)
+            self.parent().slide('focus_rate', self.parent().focus_rate, 0)
+
     def get_focus_rate(self):
         return self._focus_rate
 
@@ -438,18 +447,11 @@ class RTextEdit(RWidget):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.line_edit = QTextEdit(self)
+        self.text_edit = RTextEdit._TextEdit(self)
+        self.text_edit.setTabChangesFocus(True)
         self.widget_type = 'text_edit'
         self._focus_rate = 0
 
-    def focusInEvent(self, event):
-        super().focusInEvent(event)
-        self.slide('focus_rate', 0, 1)
-
-    def focusOutEvent(self, event):
-        super().focusOutEvent(event)
-        self.slide('focus_rate', self.focus_rate, 0)
-
     def paintEvent(self, event):
-        self.line_edit.resize(self.size())
+        self.text_edit.resize(self.size())
         super().paintEvent(event)
