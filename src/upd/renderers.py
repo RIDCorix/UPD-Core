@@ -1,16 +1,14 @@
 from PySide6.QtCore import QPoint, QRect
 from PySide6.QtGui import QBrush, QColor, QFont, QPainter, QPalette, QPen, QPixmap, QRadialGradient
 from .conf import Configuration
+from upd.options import Optionable
 
 renderers = {}
 
-class RWidgetRenderer:
-    def __init__(self):
+class RWidgetRenderer(Optionable):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.name = 'UNDEFINED'
-        self.settings = Configuration()
-
-    def apply(self, settings):
-        self.settings = settings
 
     def pre_render(self, widget, event):
         pass

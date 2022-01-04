@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, List
 
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QComboBox
@@ -12,6 +12,16 @@ class Optionable:
 
     def add_options(self, **options):
         self.options.update(options)
+
+    def set_option(self, key: str, value: Any):
+        self.options[key] = value
+
+    def get_option(self, key: str) -> Any:
+        return self.options[key].value
+
+    def get_options(self, *keys: List[str]) -> Any:
+        return [self.get_option(key) for key in keys]
+
 
 class Option:
     def __init__(self, name: str, default: Any, *args, **kwargs):
@@ -40,7 +50,11 @@ class ColorOption(Option):
 
     @property
     def value(self):
-        return QColor.fromRgb(self._value.rgba())
+        return QColor(self._value)
+
+    @value.setter
+    def set_value(self, color):
+        self._value = color.name()
 
     def init_ui(self, picker):
         picker.button.setText(self.name)
@@ -54,7 +68,6 @@ class FontOption(Option):
         picker.button.setText(self.name)
 
 
-
 class DurationOption(Option):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -62,6 +75,7 @@ class DurationOption(Option):
 
     def init_ui(self, picker):
         picker.button.setText(self.name)
+
 
 class ChoiceOption(Option):
     def __init__(self, *args, **kwargs):

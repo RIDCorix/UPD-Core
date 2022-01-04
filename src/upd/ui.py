@@ -9,7 +9,7 @@ from PySide6 import QtGui
 
 from PySide6.QtGui import QBrush, QColor, QFont, QPainter, QPalette, QPen, QPixmap, QRadialGradient
 from PySide6.QtCore import Property, QEasingCurve, QParallelAnimationGroup, QPoint, QPointF, QPropertyAnimation, QRect, QSize, Qt, Signal, Slot
-from PySide6.QtWidgets import QCompleter, QGridLayout, QHBoxLayout, QLineEdit, QScrollArea, QWidget, QVBoxLayout, QPushButton, QLabel, QColorDialog
+from PySide6.QtWidgets import QCompleter, QGridLayout, QHBoxLayout, QLineEdit, QPlainTextEdit, QScrollArea, QTabWidget, QWidget, QVBoxLayout, QPushButton, QLabel, QColorDialog
 
 from .models import RBaseModel
 
@@ -18,7 +18,6 @@ class Renderable:
     def paintEvent(self, e):
         from upd.conf import settings
         renderer = settings.RENDERER
-
 
         try:
             getattr(renderer, f'pre_render_{self.widget_type}')(self, e)
@@ -82,6 +81,11 @@ class Slidable:
         self._easing = easing
         self._slide_signal.emit()
 
+
+class RTabWidget(Renderable, Slidable, QTabWidget):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.widget_type = 'main_panel'
 
 class RWidget(Renderable, Slidable, QWidget):
     def __init__(self, *args, **kwargs):
@@ -423,3 +427,9 @@ class RGridView(RWidget):
     def paintEvent(self, event) -> None:
         self.refresh()
         return super().paintEvent(event)
+
+
+class RTextEdit(QPlainTextEdit):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.widget_type='text_edit'
