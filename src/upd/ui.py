@@ -427,7 +427,7 @@ class RGridView(RWidget):
 
 
 class RTextEdit(RWidget):
-    class _TextEdit(QPlainTextEdit):
+    class _TextEdit(QTextEdit):
         def focusInEvent(self, event):
             super().focusInEvent(event)
             self.parent().slide('focus_rate', 0, 1)
@@ -451,6 +451,11 @@ class RTextEdit(RWidget):
         self.text_edit.setTabChangesFocus(True)
         self.widget_type = 'text_edit'
         self._focus_rate = 0
+        self.text_edit.setStyleSheet('background-color:transparent;')
+        palette = self.text_edit.palette()
+        palette.setColor(palette.Base, QtGui.QColor("transparent"))
+
+        self.text_edit.setPalette(palette)
 
     def paintEvent(self, event):
         self.text_edit.resize(self.size())
