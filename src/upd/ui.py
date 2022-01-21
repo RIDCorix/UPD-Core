@@ -1,6 +1,4 @@
-from typing import Any, Hashable, Optional
-
-import datetime
+from typing import Any, Callable, Dict, Hashable, List, Optional, Type
 
 from contextlib import contextmanager
 from PySide6 import QtCore
@@ -86,6 +84,7 @@ class RTabWidget(Renderable, Slidable, QTabWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.widget_type = 'main_panel'
+
 
 class RWidget(Renderable, Slidable, QWidget):
     def __init__(self, *args, **kwargs):
@@ -460,3 +459,80 @@ class RTextEdit(RWidget):
     def paintEvent(self, event):
         self.text_edit.resize(self.size())
         super().paintEvent(event)
+
+
+class ViewAction:
+    def __init__(self):
+        self.view = None
+        self.widget = None
+
+    def act(self, item_id):
+        pass
+
+
+class RemoveAction:
+    def act(self, item_id):
+        model = self.view.model
+
+        model.update(removed=True).where(model.id==item_id).execute()
+
+class RItem:
+    def __init__(self, view, data):
+        self.view = view
+        self.data = data
+
+    def data(self, data: Dict):
+        self.data = data
+
+    def refresh(self):
+        pass
+
+
+class RView:
+    def __init__(self):
+        self.model = None
+        self.columns = None
+        self.actions = {}
+
+        self.data = []
+        self.items = []
+
+        self.fetch_query = self.model.select(self.columns + ['id']).where(self.model.removed == False)
+
+
+    def fetch_query(self, query):
+        self.fetch_query = query
+
+    def columns(self, *columns: List[str]):
+        self.columns = columns
+
+    def bind_model(self, model_class: Type):
+        self.model = model_class
+
+    def action(self, name: str, action: ViewAction):
+        self.actions[name] = action
+        action.view = self
+
+    def fetch_data(self):
+        self.data = list(self.fetch_query)
+
+    def refresh(self):
+        items_to_remove = self.items.keys()
+
+        for data_item in self.data:
+            item_id = data_item['id']
+            if item_id in self.items.keys():
+                items_to_remove.remove(item_id)
+                item = self.itmes[item_id]
+
+            else:
+                new_item = RItem(self, data_item)
+                self.items[item_id] = new_item
+                item = new_item
+
+            item.data(data_item)
+            item.refresh()
+
+    def refresh_data(self):
+        self.fetch_data()
+        self.refresh()
